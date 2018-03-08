@@ -17,11 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 #include <osgEarthSymbology/Query>
+#include <osgEarthSymbology/Geometry>
 
 using namespace osgEarth;
 using namespace osgEarth::Symbology;
 
-Query::Query( const Config& conf )
+Query::Query( const Config& conf ) :
+_ai(0L)
 {
     mergeConfig( conf );
 }
@@ -32,7 +34,8 @@ _expression(rhs._expression),
 _orderby(rhs._orderby),
 _tileKey(rhs._tileKey),
 _mapFrame(rhs._mapFrame),
-_limit(rhs._limit)
+_limit(rhs._limit),
+_ai(rhs._ai)
 {
     //nop
 }

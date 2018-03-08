@@ -46,19 +46,98 @@ namespace osgEarth { namespace Symbology
 
     typedef std::vector<osg::Vec3d> Vec3dVector;
 
+    template<typename T>
+    struct VectorAllocator
+    {
+        typedef std::vector<T> vec_type;
+
+        struct vec_compare {
+            bool operator()(const vec_type* lhs, const vec_type* rhs) const {
+                return lhs->capacity() >= rhs->capacity();
+            }
+        };
+
+        typedef std::set<vec_type*, vec_compare> pool_type;
+
+        vec_type* allocate() {
+            if (_pool.empty())
+                return new vec_type();
+            else {
+                vec_type* v = *_pool.begin();
+                _pool.erase(_pool.begin());
+                return v;
+            }
+        }
+        void deallocate(vec_type* v) {
+            _pool.insert(v);
+            v->clear();            
+        }
+        ~VectorAllocator() {
+            for (pool_type::iterator i = _pool.begin(); i != _pool.end(); ++i)
+                delete *i;
+        }
+
+        pool_type _pool;
+    };
+
+    typedef VectorAllocator<osg::Vec3d> GeometryAllocator;
+
     /**
      * Baseline geometry class. All Geometry objects derive from this
      * class, even MultiGeometry.
      */
-    class OSGEARTHSYMBOLOGY_EXPORT Geometry : public osgEarth::MixinVector<osg::Vec3d,osg::Referenced>
+    class OSGEARTHSYMBOLOGY_EXPORT Geometry : public osg::Referenced
     {
+    protected:
+        std::vector<osg::Vec3d>* _v;
+        GeometryAllocator* _ai;
+        void allocate();
+        void deallocate();
+
     public:
-        Geometry( int capacity =0 );
-        Geometry( const Geometry& rhs );
-        Geometry( const Vec3dVector* toCopy );
+        Geometry(GeometryAllocator* ai =0L);
+        Geometry(unsigned reserved, GeometryAllocator* ai =0L);
+        Geometry(const Vec3dVector* dataToCopy, GeometryAllocator* ai =0L);
+        Geometry(const Geometry& rhs);
 
         /** dtor - intentionally public */
         virtual ~Geometry();
+
+    public: // std::vector proxy
+        typedef std::vector<osg::Vec3d>::value_type value_type;
+        typedef std::vector<osg::Vec3d>::iterator iterator;
+        typedef std::vector<osg::Vec3d>::const_iterator const_iterator;
+        typedef std::vector<osg::Vec3d>::size_type size_type;
+
+        iterator begin() { return _v->begin(); }
+        const_iterator begin() const { return _v->begin(); }
+        iterator end() { return _v->end(); }
+        const_iterator end() const { return _v->end(); }
+
+        value_type& front() { return _v->front(); }
+        const value_type& front() const { return _v->front(); }
+        value_type& back() { return _v->back(); }
+        const value_type& back() const { return _v->back(); }
+        
+        size_type size() const { return _v->size(); }
+        bool empty() const { return _v->empty(); }
+        value_type& operator[](unsigned index) { return (*_v)[index]; }
+        const value_type& operator[](unsigned index) const { return (*_v)[index]; }
+
+        //warning, at is slow
+        value_type& at(unsigned index) { return (*_v)[index]; }
+        const value_type& at(unsigned index) const { return (*_v)[index]; }
+
+        void push_back(const value_type& p) { _v->push_back(p); }
+        void push_back(double x, double y) { _v->push_back(osg::Vec3d(x, y, 0)); }
+        void push_back(double x, double y, double z) { _v->push_back(osg::Vec3d(x, y, z)); }
+
+        void reserve(size_type size) { _v->reserve(size); }
+        void resize(size_type size) { _v->resize(size); }
+
+        iterator erase(iterator i) { return _v->erase(i); }
+
+        void clear() { _v->clear(); }
 
     public:
         enum Type {
@@ -87,7 +166,7 @@ namespace osgEarth { namespace Symbology
         }
 
         /** Creates a geometry from a vector array */
-        static Geometry* create( Type type, const Vec3dVector* toCopy );
+        static Geometry* create(Type type, const Vec3dVector* toCopy, GeometryAllocator* ai_ptr =0L);
 
         // true if osgEarth is compiled for buffering
         static bool hasBufferOperation();
@@ -230,19 +309,15 @@ namespace osgEarth { namespace Symbology
          */
         Orientation getOrientation() const;
 
+        //! Direct access to the underlying vector
+        std::vector<osg::Vec3d>& asVector() const { return (*_v); }
+
     public:
         virtual Type getType() const { return TYPE_UNKNOWN; }
         virtual Type getComponentType() const { return getType(); }
         virtual bool isValid() const { return size() >= 1; }
 
         virtual Geometry* clone() const { return cloneAs(getType()); }
-
-        void push_back(const osg::Vec3d& v ) {
-            osgEarth::MixinVector<osg::Vec3d,osg::Referenced>::push_back(v); }
-        void push_back(double x, double y) { 
-            osgEarth::MixinVector<osg::Vec3d,osg::Referenced>::push_back(osg::Vec3d(x,y,0.)); }
-        void push_back(double x, double y, double z) { 
-            osgEarth::MixinVector<osg::Vec3d,osg::Referenced>::push_back(osg::Vec3d(x,y,z)); }
 
     protected:
     };
@@ -255,9 +330,10 @@ namespace osgEarth { namespace Symbology
     class OSGEARTHSYMBOLOGY_EXPORT PointSet : public Geometry
     {
     public:
-        PointSet( int capacity =0 ) : Geometry( capacity ) { }
-        PointSet( const Vec3dVector* toCopy ) : Geometry( toCopy ) { }
-        PointSet( const PointSet& rhs );
+        PointSet(GeometryAllocator* ai =0L) : Geometry(ai) { }
+        PointSet(unsigned reserved, GeometryAllocator* ai =0L) : Geometry(reserved, ai) { }
+        PointSet(const Vec3dVector* toCopy, GeometryAllocator* ai =0L) : Geometry(toCopy, ai) { }
+        PointSet(const PointSet& rhs);
 
         /** dtor */
         virtual ~PointSet();
@@ -274,9 +350,10 @@ namespace osgEarth { namespace Symbology
     class OSGEARTHSYMBOLOGY_EXPORT LineString : public Geometry
     {
     public:
-        LineString( int capacity =0 ) : Geometry( capacity ) { }
-        LineString( const LineString& rhs );
-        LineString( const Vec3dVector* toCopy );
+        LineString(GeometryAllocator* ai =0L) : Geometry(ai) { }
+        LineString(unsigned reserved, GeometryAllocator* ai =0L) : Geometry(reserved, ai) { }
+        LineString(const LineString& rhs);
+        LineString(const Vec3dVector* toCopy, GeometryAllocator* ai =0L);
 
         /** dtor */
         virtual ~LineString();
@@ -298,9 +375,10 @@ namespace osgEarth { namespace Symbology
     class OSGEARTHSYMBOLOGY_EXPORT Ring : public Geometry
     {
     public:
-        Ring( int capacity =0 ) : Geometry( capacity ) { }
-        Ring( const Ring& ring );
-        Ring( const Vec3dVector* toCopy );
+        Ring(GeometryAllocator* ai =0L) : Geometry(ai) { }
+        Ring(unsigned reserved, GeometryAllocator* ai =0L) : Geometry(reserved, ai) { }
+        Ring(const Ring& ring);
+        Ring(const Vec3dVector* toCopy, GeometryAllocator* ai =0L);
 
         /** dtor */
         virtual ~Ring();
@@ -344,9 +422,10 @@ namespace osgEarth { namespace Symbology
     class OSGEARTHSYMBOLOGY_EXPORT Polygon : public Ring
     {
     public:
-        Polygon( int capacity =0 ) : Ring( capacity ) { }
-        Polygon( const Polygon& rhs );
-        Polygon( const Vec3dVector* toCopy );
+        Polygon(GeometryAllocator* ai =0L) : Ring(ai) { }
+        Polygon(unsigned reserved, GeometryAllocator* ai =0L) : Ring(reserved, ai) { }
+        Polygon(const Polygon& rhs);
+        Polygon(const Vec3dVector* toCopy, GeometryAllocator* ai =0L);
 
         /** dtor */
         virtual ~Polygon();
@@ -382,9 +461,9 @@ namespace osgEarth { namespace Symbology
     class OSGEARTHSYMBOLOGY_EXPORT MultiGeometry : public Geometry
     {
     public:
-        MultiGeometry() { }
-        MultiGeometry( const GeometryCollection& parts );
-        MultiGeometry( const MultiGeometry& rhs );
+        MultiGeometry();
+        MultiGeometry(const GeometryCollection& parts);
+        MultiGeometry(const MultiGeometry& rhs);
 
         /** dtor */
         virtual ~MultiGeometry();

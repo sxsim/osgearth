@@ -21,6 +21,7 @@
 #define OSGEARTHSYMBOLOGY_QUERY_H 1
 
 #include <osgEarthSymbology/Common>
+#include <osgEarthSymbology/Geometry>
 #include <osgEarth/Config>
 #include <osgEarth/Map>
 #include <osgEarth/GeoData>
@@ -41,6 +42,9 @@ namespace osgEarth { namespace Symbology
         Query(const Query& rhs);
 
         virtual ~Query() { }
+
+        void setGeometryAllocator(GeometryAllocator* ai) { _ai = ai; }
+        GeometryAllocator* getGeometryAllocator() const { return _ai; }
 
     public: // properties
 
@@ -87,6 +91,7 @@ namespace osgEarth { namespace Symbology
         optional<osgEarth::TileKey> _tileKey;
         optional<int> _limit;
         MapFrame _mapFrame;
+        GeometryAllocator* _ai;
     };
 
 } } // namespace osgEarth::Symbology

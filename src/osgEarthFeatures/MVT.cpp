@@ -62,7 +62,7 @@ int zig_zag_decode(int n)
 
 #ifdef OSGEARTH_HAVE_MVT
 
-Geometry* decodeLine(const mapnik::vector::tile_feature& feature, const TileKey& key, unsigned int tileres)
+Geometry* decodeLine(const mapnik::vector::tile_feature& feature, const TileKey& key, unsigned int tileres, GeometryAllocator* ai)
 {
     unsigned int length = 0;
     int cmd = -1;
@@ -90,7 +90,7 @@ Geometry* decodeLine(const mapnik::vector::tile_feature& feature, const TileKey&
             {
                 if (cmd == SEG_MOVETO)
                 {
-                    currentLine = new osgEarth::Symbology::LineString;
+                    currentLine = new osgEarth::Symbology::LineString(ai);
                     lines.push_back( currentLine.get() );
                 }
                 int px = feature.geometry(k++);
@@ -138,7 +138,7 @@ Geometry* decodeLine(const mapnik::vector::tile_feature& feature, const TileKey&
     }
 }
 
-Geometry* decodePoint(const mapnik::vector::tile_feature& feature, const TileKey& key, unsigned int tileres)
+Geometry* decodePoint(const mapnik::vector::tile_feature& feature, const TileKey& key, unsigned int tileres, GeometryAllocator* ai)
 {
     unsigned int length = 0;
     int cmd = -1;
@@ -147,7 +147,7 @@ Geometry* decodePoint(const mapnik::vector::tile_feature& feature, const TileKey
     int x = 0;
     int y = 0;
 
-    osgEarth::Symbology::PointSet *geometry = new osgEarth::Symbology::PointSet();
+    osgEarth::Symbology::PointSet *geometry = new osgEarth::Symbology::PointSet(ai);
 
     for (int k = 0; k < feature.geometry_size();)
     {
@@ -183,7 +183,7 @@ Geometry* decodePoint(const mapnik::vector::tile_feature& feature, const TileKey
     return geometry;
 }
 
-Geometry* decodePolygon(const mapnik::vector::tile_feature& feature, const  TileKey& key, unsigned int tileres)
+Geometry* decodePolygon(const mapnik::vector::tile_feature& feature, const  TileKey& key, unsigned int tileres, GeometryAllocator* ai)
 {
     /*
      https://github.com/mapbox/vector-tile-spec/tree/master/2.1
@@ -223,7 +223,7 @@ Geometry* decodePolygon(const mapnik::vector::tile_feature& feature, const  Tile
             {
                 if (!currentRing)
                 {
-                    currentRing = new osgEarth::Symbology::Ring();
+                    currentRing = new osgEarth::Symbology::Ring(ai);
                 }
 
                 int px = feature.geometry(k++);
@@ -256,7 +256,7 @@ Geometry* decodePolygon(const mapnik::vector::tile_feature& feature, const  Tile
                     // osgearth orientations are reversed from mvt
                     currentRing->rewind(Geometry::ORIENTATION_CCW);
 
-                    currentPolygon = new osgEarth::Symbology::Polygon(&currentRing->asVector());
+                    currentPolygon = new osgEarth::Symbology::Polygon(&currentRing->asVector(), ai);
                     polygons.push_back(currentPolygon.get());
                 }
                 else if (orientation == Geometry::ORIENTATION_CCW)
@@ -310,7 +310,7 @@ Geometry* decodePolygon(const mapnik::vector::tile_feature& feature, const  Tile
 
 
 bool
-    MVT::read(std::istream& in, const TileKey& key, FeatureList& features)
+MVT::read(std::istream& in, const TileKey& key, FeatureList& features, GeometryAllocator* ai)
 {
     features.clear();
 
@@ -418,19 +418,19 @@ bool
                 eGeomType geomType = static_cast<eGeomType>(feature.type());
                 if (geomType == ::Polygon)
                 {
-                    geometry = decodePolygon(feature, key, layer.extent());
+                    geometry = decodePolygon(feature, key, layer.extent(), ai);
                 }
                 else if (geomType == ::LineString)
                 {
-                    geometry = decodeLine(feature, key, layer.extent());
+                    geometry = decodeLine(feature, key, layer.extent(), ai);
                 }
                 else if (geomType == ::Point)
                 {
-                    geometry = decodePoint(feature, key, layer.extent());
+                    geometry = decodePoint(feature, key, layer.extent(), ai);
                 }
                 else
                 {
-                    geometry = decodeLine(feature, key, layer.extent());
+                    geometry = decodeLine(feature, key, layer.extent(), ai);
                 }
 
                 if (geometry)

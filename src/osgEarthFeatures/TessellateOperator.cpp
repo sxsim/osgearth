@@ -163,7 +163,7 @@ TessellateOperator::operator()( Feature* feature, FilterContext& context ) const
             }
         }
 
-        g->swap( newVerts );
+        g->asVector().swap( newVerts );
     }
 }
 

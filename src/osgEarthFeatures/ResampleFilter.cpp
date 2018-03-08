@@ -172,7 +172,7 @@ ResampleFilter::push( Feature* input, FilterContext& context )
 
         part->clear();
         part->reserve( plist.size() );
-        part->insert( part->begin(), plist.begin(), plist.end() );
+        part->asVector().insert( part->begin(), plist.begin(), plist.end() );
     }
     return success;
 }

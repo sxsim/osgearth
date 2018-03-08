@@ -156,7 +156,7 @@ public:
         fout.close();
     }
 
-    bool getFeatures( const std::string& buffer, const std::string& mimeType, FeatureList& features )
+    bool getFeatures( const std::string& buffer, const std::string& mimeType, FeatureList& features, GeometryAllocator* ai)
     {
         OGR_SCOPED_LOCK;        
 
@@ -213,7 +213,7 @@ public:
             {
                 if ( feat_handle )
                 {
-                    osg::ref_ptr<Feature> f = OgrUtils::createFeature( feat_handle, getFeatureProfile() );
+                    osg::ref_ptr<Feature> f = OgrUtils::createFeature( feat_handle, getFeatureProfile(), ai );
                     if ( f.valid() && !isBlacklisted(f->getFID()) )
                     {
                         features.push_back( f.release() );
@@ -356,7 +356,7 @@ public:
         {
             // Get the mime-type from the metadata record if possible
             const std::string& mimeType = r.metadata().value( IOMetadata::CONTENT_TYPE );
-            dataOK = getFeatures( buffer, mimeType, features );
+            dataOK = getFeatures(buffer, mimeType, features, query.getGeometryAllocator());
         }
 
         if ( dataOK )

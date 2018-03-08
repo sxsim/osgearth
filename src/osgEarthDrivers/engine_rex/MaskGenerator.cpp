@@ -81,7 +81,7 @@ namespace
 
             if (newGeom.empty() == false)
             {
-                part->swap(newGeom);
+                part->asVector().swap(newGeom);
             }
         }
 

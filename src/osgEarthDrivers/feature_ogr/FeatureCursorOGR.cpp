@@ -242,7 +242,7 @@ FeatureCursorOGR::readChunk()
             OGRFeatureH handle = OGR_L_GetNextFeature( _resultSetHandle );
             if ( handle )
             {
-                osg::ref_ptr<Feature> feature = OgrUtils::createFeature( handle, _profile.get() );
+                osg::ref_ptr<Feature> feature = OgrUtils::createFeature( handle, _profile.get(), _query.getGeometryAllocator() );
 
                 if (feature.valid())
                 {

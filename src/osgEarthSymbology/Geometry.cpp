@@ -41,33 +41,62 @@ using namespace geos::operation;
 
 #define LC "[Geometry] "
 
-
-Geometry::Geometry( const Geometry& rhs ) :
-osgEarth::MixinVector<osg::Vec3d,osg::Referenced>( rhs )
+Geometry::Geometry(GeometryAllocator* ai) :
+_ai(ai)
 {
-    //nop
+    allocate();
 }
 
-Geometry::Geometry( int capacity )
+Geometry::Geometry(unsigned reserved, GeometryAllocator* ai) :
+_ai(ai)
 {
-    if ( capacity > 0 )
-        reserve( capacity );
+    allocate();
+    reserve(reserved);
 }
 
-Geometry::Geometry( const Vec3dVector* data )
+Geometry::Geometry(const Vec3dVector* dataToCopy, GeometryAllocator* ai) :
+_ai(ai)
 {
-    reserve( data->size() );
-    insert( begin(), data->begin(), data->end() );
+    allocate();
+    _v->reserve(dataToCopy->size());
+    _v->insert(_v->begin(), dataToCopy->begin(), dataToCopy->end());
+}
+
+Geometry::Geometry(const Geometry& rhs) :
+_ai(rhs._ai)
+{
+    allocate();
+    _v->reserve(rhs.size());
+    _v->insert(rhs._v->begin(), _v->begin(), _v->end());
 }
 
 Geometry::~Geometry()
 {
+    deallocate();
+}
+
+void
+Geometry::allocate()
+{
+    if (_ai)
+        _v = _ai->allocate();
+    else
+        _v = new std::vector<osg::Vec3d>();
+}
+
+void
+Geometry::deallocate()
+{
+    if (_ai)
+        _ai->deallocate(_v);
+    else
+        delete _v;
 }
 
 int
 Geometry::getTotalPointCount() const
 {
-    return size();
+    return _v->size();
 }
 
 Bounds
@@ -80,26 +109,23 @@ Geometry::getBounds() const
 }
 
 Geometry*
-Geometry::cloneAs( const Geometry::Type& newType ) const
-{
-    //if ( newType == getType() )        
-    //    return static_cast<Geometry*>( clone() );
-    
+Geometry::cloneAs(const Geometry::Type& newType) const
+{    
     switch( newType )
     {
     case TYPE_POINTSET:
-        return new PointSet( &this->asVector() );
+        return new PointSet(_v, _ai); // &this->asVector() );
     case TYPE_LINESTRING:
-        return new LineString( &this->asVector() );
+        return new LineString(_v, _ai);
     case TYPE_RING:
-        return new Ring( &this->asVector() );
+        return new Ring(_v, _ai);
     case TYPE_POLYGON:
         if ( dynamic_cast<const Polygon*>(this) )
             return new Polygon( *static_cast<const Polygon*>(this) );
         else
-            return new Polygon( &this->asVector() );
+            return new Polygon(_v, _ai);
     case TYPE_UNKNOWN:
-        return new Geometry( &this->asVector() );
+        return new Geometry(_v, _ai);
     default:
         break;
     }
@@ -123,18 +149,18 @@ Geometry::createVec3dArray() const
 }
 
 Geometry*
-Geometry::create( Type type, const Vec3dVector* toCopy )
+Geometry::create(Type type, const Vec3dVector* toCopy, GeometryAllocator* ai_ptr)
 {
     Geometry* output = 0L;
     switch( type ) {
         case TYPE_POINTSET:
-            output = new PointSet( toCopy ); break;
+            output = new PointSet( toCopy, ai_ptr ); break;
         case TYPE_LINESTRING:
-            output = new LineString( toCopy ); break;
+            output = new LineString( toCopy, ai_ptr ); break;
         case TYPE_RING:
-            output = new Ring( toCopy ); break;
+            output = new Ring( toCopy, ai_ptr ); break;
         case TYPE_POLYGON:
-            output = new Polygon( toCopy ); break;
+            output = new Polygon( toCopy, ai_ptr ); break;
         default:
             break;
     }
@@ -680,8 +706,8 @@ Geometry( rhs )
     //nop
 }
 
-LineString::LineString( const Vec3dVector* data ) :
-Geometry( data )
+LineString::LineString(const Vec3dVector* dataToCopy, GeometryAllocator* ai_ptr) :
+Geometry(dataToCopy, ai_ptr)
 {
     //nop
 }
@@ -717,14 +743,14 @@ LineString::close()
 
 //----------------------------------------------------------------------------
 
-Ring::Ring( const Ring& rhs ) :
+Ring::Ring(const Ring& rhs) :
 Geometry( rhs )
 {
     //nop
 }
 
-Ring::Ring( const Vec3dVector* data ) :
-Geometry( data )
+Ring::Ring(const Vec3dVector* data, GeometryAllocator* ai_ptr) :
+Geometry( data, ai_ptr )
 {
     open();
 }
@@ -738,7 +764,7 @@ Ring::cloneAs( const Geometry::Type& newType ) const
 {
     if ( newType == TYPE_LINESTRING )
     {
-        LineString* line = new LineString( &this->asVector() );
+        LineString* line = new LineString(_v); // &this->asVector() );
         if ( line->size() > 1 && line->front() != line->back() )
             line->push_back( front() );
         return line;
@@ -826,15 +852,15 @@ Ring::contains2D( double x, double y ) const
 
 //----------------------------------------------------------------------------
 
-Polygon::Polygon( const Polygon& rhs ) :
-Ring( rhs )
+Polygon::Polygon(const Polygon& rhs) :
+Ring(rhs)
 {
     for( RingCollection::const_iterator r = rhs._holes.begin(); r != rhs._holes.end(); ++r )
         _holes.push_back( new Ring(*r->get()) );
 }
 
-Polygon::Polygon( const Vec3dVector* data ) :
-Ring( data )
+Polygon::Polygon(const Vec3dVector* dataToCopy, GeometryAllocator* ai_ptr) :
+Ring( dataToCopy, ai_ptr )
 {
     //nop
 }
@@ -904,11 +930,17 @@ Polygon::removeColinearPoints()
 
 //----------------------------------------------------------------------------
 
+MultiGeometry::MultiGeometry()
+{
+    // Do not call base CTOR - don't want to allocate a vector.
+    // nop
+}
+
 MultiGeometry::MultiGeometry( const MultiGeometry& rhs ) :
 Geometry( rhs )
 {
     for( GeometryCollection::const_iterator i = rhs._parts.begin(); i != rhs._parts.end(); ++i )
-        _parts.push_back( i->get()->clone() ); //i->clone() ); //osg::clone<Geometry>( i->get() ) );
+        _parts.push_back( i->get()->clone() );
 }
 
 MultiGeometry::MultiGeometry( const GeometryCollection& parts ) :
@@ -919,6 +951,7 @@ _parts( parts )
 
 MultiGeometry::~MultiGeometry()
 {
+    //nop
 }
 
 Geometry::Type
@@ -978,7 +1011,8 @@ MultiGeometry::cloneAs( const Geometry::Type& newType ) const
     for( GeometryCollection::const_iterator i = _parts.begin(); i != _parts.end(); ++i )
     {
         Geometry* part = i->get()->cloneAs( i->get()->getType() );
-        if ( part ) multi->getComponents().push_back( part );
+        if ( part )
+            multi->add(part);
     }
     return multi;
 }

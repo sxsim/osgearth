@@ -37,9 +37,9 @@ struct OSGEARTHFEATURES_EXPORT OgrUtils
 {
     static void populate( OGRGeometryH geomHandle, Symbology::Geometry* target, int numPoints );
     
-    static Symbology::Polygon* createPolygon( OGRGeometryH geomHandle );
+    static Symbology::Polygon* createPolygon( OGRGeometryH geomHandle, GeometryAllocator* ai );
        
-    static Symbology::Geometry* createGeometry( OGRGeometryH geomHandle );
+    static Symbology::Geometry* createGeometry( OGRGeometryH geomHandle, GeometryAllocator* ai =0L );
 
     static OGRGeometryH encodePart( const Geometry* geometry, OGRwkbGeometryType part_type );
 
@@ -47,13 +47,13 @@ struct OSGEARTHFEATURES_EXPORT OgrUtils
 
     static OGRGeometryH createOgrGeometry(const Geometry* geometry, OGRwkbGeometryType requestedType = wkbUnknown);
 
-    static Feature* createFeature( OGRFeatureH handle, const FeatureProfile* profile );
+    static Feature* createFeature( OGRFeatureH handle, const FeatureProfile* profile, GeometryAllocator* ai =0L );
     
     static AttributeType getAttributeType( OGRFieldType type );  
 
 private:
     
-    static Feature* createFeature( OGRFeatureH handle, const SpatialReference* srs );
+    static Feature* createFeature( OGRFeatureH handle, const SpatialReference* srs, GeometryAllocator* ai);
 };
 
 

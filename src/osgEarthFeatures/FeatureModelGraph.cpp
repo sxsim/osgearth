@@ -60,6 +60,8 @@ using namespace osgEarth::Symbology;
 
 namespace
 {
+    static bool USE_AI = ::getenv("OE_USE_AI") != 0L;
+
     // callback to force features onto the high-latency queue.
     struct HighLatencyFileLocationCallback : public osgDB::FileLocationCallback
     {
@@ -1037,7 +1039,10 @@ FeatureModelGraph::buildTile(const FeatureLevel& level,
         if ( key )
             query.tileKey() = *key;
 
-        query.setMap(_session->createMapFrame());// _session->getMap() );
+        query.setMap(_session->createMapFrame());
+        
+        if (USE_AI)
+            query.setGeometryAllocator(&_ai.get());
 
         // does the level have a style name set?
         if ( level.styleName().isSet() )
@@ -1262,6 +1267,14 @@ FeatureModelGraph::build(const Style&          defaultStyle,
             if ( styleGroup && !group->containsNode(styleGroup) )
                 group->addChild( styleGroup );
         }
+    }
+    
+    
+    if (USE_AI)
+    {
+        Registry::instance()->startActivity(
+            Stringify() << "pool " << Threading::getCurrentThreadId(),
+            Stringify() << _ai.get()._pool.size() );
     }
 
     return group->getNumChildren() > 0 ? group.release() : 0L;
@@ -1506,7 +1519,6 @@ FeatureModelGraph::createStyleGroup(const Style&          style,
 
         styleGroup = createStyleGroup(style, workingSet, context, readOptions);
     }
-
 
     return styleGroup;
 }

@@ -48,7 +48,7 @@ OgrUtils::populate( OGRGeometryH geomHandle, Symbology::Geometry* target, int nu
 }
 
 Symbology::Polygon*
-OgrUtils::createPolygon( OGRGeometryH geomHandle )
+OgrUtils::createPolygon( OGRGeometryH geomHandle, GeometryAllocator* ai )
 {
     Symbology::Polygon* output = 0L;
 
@@ -56,7 +56,7 @@ OgrUtils::createPolygon( OGRGeometryH geomHandle )
     if ( numParts == 0 )
     {
         int numPoints = OGR_G_GetPointCount( geomHandle );
-        output = new Symbology::Polygon( numPoints );
+        output = new Symbology::Polygon( numPoints, ai );
         populate( geomHandle, output, numPoints );
         output->open();
     }
@@ -68,14 +68,14 @@ OgrUtils::createPolygon( OGRGeometryH geomHandle )
             int numPoints = OGR_G_GetPointCount( partRef );
             if ( p == 0 )
             {
-                output = new Symbology::Polygon( numPoints );
+                output = new Symbology::Polygon( numPoints, ai );
                 populate( partRef, output, numPoints );
                 //output->open();
                 output->rewind( Symbology::Ring::ORIENTATION_CCW );
             }
             else
             {
-                Symbology::Ring* hole = new Symbology::Ring( numPoints );
+                Symbology::Ring* hole = new Symbology::Ring( numPoints, ai );
                 populate( partRef, hole, numPoints );
                 //hole->open();
                 hole->rewind( Symbology::Ring::ORIENTATION_CW );
@@ -87,7 +87,7 @@ OgrUtils::createPolygon( OGRGeometryH geomHandle )
 }
 
 Symbology::Geometry*
-OgrUtils::createGeometry( OGRGeometryH geomHandle )
+OgrUtils::createGeometry( OGRGeometryH geomHandle, GeometryAllocator* ai )
 {
     Symbology::Geometry* output = 0L;
 
@@ -103,7 +103,7 @@ OgrUtils::createGeometry( OGRGeometryH geomHandle )
     case wkbPolygonM:
     case wkbPolygonZM:
 #endif
-        output = createPolygon(geomHandle);
+        output = createPolygon(geomHandle, ai);
         break;
 
     case wkbLineString:
@@ -113,13 +113,13 @@ OgrUtils::createGeometry( OGRGeometryH geomHandle )
     case wkbLineStringZM:
 #endif
         numPoints = OGR_G_GetPointCount( geomHandle );
-        output = new Symbology::LineString( numPoints );
+        output = new Symbology::LineString( numPoints, ai );
         populate( geomHandle, output, numPoints );
         break;
 
     case wkbLinearRing:
         numPoints = OGR_G_GetPointCount( geomHandle );
-        output = new Symbology::Ring( numPoints );
+        output = new Symbology::Ring( numPoints, ai );
         populate( geomHandle, output, numPoints );
         break;
 
@@ -130,7 +130,7 @@ OgrUtils::createGeometry( OGRGeometryH geomHandle )
     case wkbPointZM:
 #endif
         numPoints = OGR_G_GetPointCount( geomHandle );
-        output = new Symbology::PointSet( numPoints );
+        output = new Symbology::PointSet( numPoints, ai );
         populate( geomHandle, output, numPoints );
         break;
 
@@ -159,7 +159,7 @@ OgrUtils::createGeometry( OGRGeometryH geomHandle )
             OGRGeometryH subGeomRef = OGR_G_GetGeometryRef( geomHandle, n );
             if ( subGeomRef )
             {
-                Symbology::Geometry* geom = createGeometry( subGeomRef );
+                Symbology::Geometry* geom = createGeometry( subGeomRef, ai );
                 if ( geom ) multi->getComponents().push_back( geom );
             }
         } 
@@ -294,24 +294,24 @@ OgrUtils::createOgrGeometry(const osgEarth::Symbology::Geometry* geometry, OGRwk
 }
 
 Feature*
-OgrUtils::createFeature(OGRFeatureH handle, const FeatureProfile* profile)
+OgrUtils::createFeature(OGRFeatureH handle, const FeatureProfile* profile, GeometryAllocator* ai )
 {
     Feature* f = 0L;
     if ( profile )
     {
-        f = createFeature( handle, profile->getSRS() );
+        f = createFeature( handle, profile->getSRS(), ai );
         if ( f && profile->geoInterp().isSet() )
             f->geoInterp() = profile->geoInterp().get();
     }
     else
     {
-        f = createFeature( handle, (const SpatialReference*)0L );
+        f = createFeature( handle, (const SpatialReference*)0L, ai );
     }
     return f;
 }            
 
 Feature*
-OgrUtils::createFeature( OGRFeatureH handle, const SpatialReference* srs )
+OgrUtils::createFeature( OGRFeatureH handle, const SpatialReference* srs, GeometryAllocator* ai )
 {
     long fid = OGR_F_GetFID( handle );
 
@@ -321,7 +321,7 @@ OgrUtils::createFeature( OGRFeatureH handle, const SpatialReference* srs )
 
     if ( geomRef )
     {
-        geom = OgrUtils::createGeometry( geomRef );
+        geom = OgrUtils::createGeometry( geomRef, ai );
     }
 
     Feature* feature = new Feature( geom, srs, Style(), fid );

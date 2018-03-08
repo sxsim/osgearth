@@ -23,6 +23,7 @@
 #include <osgEarthFeatures/Common>
 #include <osgEarthFeatures/FeatureModelSource>
 #include <osgEarthSymbology/Style>
+#include <osgEarthSymbology/Geometry>
 #include <osgEarth/NodeUtils>
 #include <osgEarth/ThreadingUtils>
 #include <osgEarth/SceneGraphCallback>
@@ -227,6 +228,8 @@ namespace osgEarth { namespace Features
         osg::ref_ptr<FeatureSourceIndex> _featureIndex;
 
         osg::ref_ptr<SceneGraphCallbacks> _sgCallbacks;
+
+        PerThread<GeometryAllocator> _ai;
 
         void runPreMergeOperations(osg::Node* node);
         void runPostMergeOperations(osg::Node* node);

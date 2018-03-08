@@ -128,12 +128,12 @@ public:
     }
 
 
-    bool getFeatures( const std::string& buffer, const TileKey& key, const std::string& mimeType, FeatureList& features )
+    bool getFeatures( const std::string& buffer, const TileKey& key, const std::string& mimeType, FeatureList& features, GeometryAllocator* ai)
     {            
         if (mimeType == "application/x-protobuf" || mimeType == "binary/octet-stream")
         {
             std::stringstream in(buffer);
-            return MVT::read(in, key, features);
+            return MVT::read(in, key, features, ai);
         }
         else
         {            
@@ -174,7 +174,7 @@ public:
                 {
                     if ( feat_handle )
                     {
-                        osg::ref_ptr<Feature> f = OgrUtils::createFeature( feat_handle, getFeatureProfile() );
+                        osg::ref_ptr<Feature> f = OgrUtils::createFeature( feat_handle, getFeatureProfile(), ai);
                         if ( f.valid() && !isBlacklisted(f->getFID()) )
                         {
                             features.push_back( f.release() );
@@ -299,7 +299,7 @@ public:
                 else if (_options.format().value().compare("gml") == 0) mimeType = "text/xml";
                 else if (_options.format().value().compare("pbf") == 0) mimeType = "application/x-protobuf";
             }
-            dataOK = getFeatures( buffer, *query.tileKey(), mimeType, features );
+            dataOK = getFeatures(buffer, *query.tileKey(), mimeType, features, query.getGeometryAllocator());
         }
 
         if ( dataOK )
