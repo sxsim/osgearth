@@ -46,12 +46,16 @@ namespace osgEarth { namespace Features
         /** Constructs a feature level with range information and a style class */
         FeatureLevel( float minRange, float maxRange, const std::string& styleName );
 
-        /** Minimum and aximum display ranges for this level */
+        /** Minimum and maximum display ranges for this level */
         optional<float>& minRange() { return _minRange; }
         const optional<float>& minRange() const { return _minRange; }
 
         optional<float>& maxRange() { return _maxRange; }
         const optional<float>& maxRange() const { return _maxRange; }
+
+        //! Tile size for this level
+        optional<double>& tileSize() { return _tileSize; }
+        const optional<double>& tileSize() const { return _tileSize; }
 
         /** Style class (or style selector) name associated with this level (optional) */
         optional<std::string>& styleName() { return _styleName; }
@@ -69,6 +73,7 @@ namespace osgEarth { namespace Features
 
         optional<float>       _minRange;
         optional<float>       _maxRange;
+        optional<double>      _tileSize;        
         optional<std::string> _styleName;
     };
 
@@ -97,8 +102,8 @@ namespace osgEarth { namespace Features
          * the system will attempt to create tiles that are approximately
          * 8,000m in radius. (120,000 / 15 = 8,000).
          */
-        optional<float>& tileSizeFactor() { return _tileSizeFactor; }
-        const optional<float>& tileSizeFactor() const { return _tileSizeFactor; }
+        optional<float>& visibilityRangeToTileSizeRatio() { return _tileSizeFactor; }
+        const optional<float>& visibilityRangeToTileSizeRatio() const { return _tileSizeFactor; }
 
         /**
          * The desired max range for pre-tiled feature sources like TFS.  The tileSizeFactor will be automatically computed
@@ -165,6 +170,7 @@ namespace osgEarth { namespace Features
         unsigned getNumLevels() const;
 
         /** Gets the nth level */
+        FeatureLevel* getLevel( unsigned i );
         const FeatureLevel* getLevel( unsigned i ) const;
 
         /**

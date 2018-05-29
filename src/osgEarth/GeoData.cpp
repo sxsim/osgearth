@@ -783,6 +783,11 @@ GeoExtent::transform(const SpatialReference* to_srs) const
     //TODO: this may not work across the antimeridian - unit test required
     if ( isValid() && to_srs )
     {
+        if (getSRS()->isHorizEquivalentTo(to_srs))
+        {
+            return *this;
+        }
+
         // do not normalize the X values here.
         double xmin = west(), ymin = south();
         double xmax = west() + width(), ymax = south() + height();

@@ -114,11 +114,6 @@ namespace osgEarth { namespace Features
          */
         void dirty();
 
-        /**
-         * Access to the features levels
-         */
-        const std::vector<const FeatureLevel*>& getLevels() const { return _lodmap; };
-
         //! Options passed in.
         const FeatureModelSourceOptions& options() const { return _options; }
 
@@ -207,14 +202,17 @@ namespace osgEarth { namespace Features
         GeoExtent                        _usableFeatureExtent;
         bool                             _featureExtentClamped;
         GeoExtent                        _usableMapExtent;
+        double                           _featureDataRadius;
         osg::BoundingSphered             _fullWorldBound;
         bool                             _useTiledSource;
         osgEarth::Revision               _featureSourceRev, _modelSourceRev;
         bool                             _dirty;
         bool                             _pendingUpdate;
-        std::vector<const FeatureLevel*> _lodmap;
+        typedef std::vector<FeatureLevel> FeatureLevels;
+        typedef std::vector<FeatureLevels> FeatureLevelsVector;
+        FeatureLevelsVector              _lodmap;
         OpenThreads::ReentrantMutex      _redrawMutex;
-
+        
         OpenThreads::Atomic _cacheReads;
         OpenThreads::Atomic _cacheHits;
 
@@ -225,6 +223,11 @@ namespace osgEarth { namespace Features
         osg::ref_ptr<FeatureSourceIndex> _featureIndex;
 
         osg::ref_ptr<SceneGraphCallbacks> _sgCallbacks;
+
+        float getMaxRange() const;
+
+        void configureFixedLayout();
+        void configureDynamicLayout();
 
         void runPreMergeOperations(osg::Node* node);
         void runPostMergeOperations(osg::Node* node);

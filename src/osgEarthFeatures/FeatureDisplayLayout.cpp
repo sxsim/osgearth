@@ -27,7 +27,8 @@ using namespace osgEarth::Symbology;
 
 FeatureLevel::FeatureLevel( const Config& conf ) :
 _minRange( 0.0f ),
-_maxRange( FLT_MAX )
+_maxRange( FLT_MAX ),
+_tileSize( 0.0 )
 {
     fromConfig( conf );
 }
@@ -50,6 +51,7 @@ FeatureLevel::fromConfig( const Config& conf )
 {
     conf.getIfSet( "min_range", _minRange );
     conf.getIfSet( "max_range", _maxRange );
+    conf.getIfSet( "tile_size", _tileSize );
     conf.getIfSet( "style",     _styleName ); 
     conf.getIfSet( "class",     _styleName ); // alias
 }
@@ -60,6 +62,7 @@ FeatureLevel::getConfig() const
     Config conf( "level" );
     conf.addIfSet( "min_range", _minRange );
     conf.addIfSet( "max_range", _maxRange );
+    conf.addIfSet( "tile_size", _tileSize );
     conf.addIfSet( "style",     _styleName );
     return conf;
 }
@@ -70,7 +73,7 @@ FeatureDisplayLayout::FeatureDisplayLayout( const Config& conf ) :
 _tileSizeFactor( 15.0f ),
 _minRange      ( 0.0f ),
 _maxRange      ( 0.0f ),
-_cropFeatures  ( false ),
+_cropFeatures  ( true ),
 _priorityOffset( 0.0f ),
 _priorityScale ( 1.0f ),
 _minExpiryTime ( 0.0f ),
@@ -124,6 +127,18 @@ unsigned
 FeatureDisplayLayout::getNumLevels() const
 {
     return _levels.size();
+}
+
+FeatureLevel*
+FeatureDisplayLayout::getLevel( unsigned n )
+{
+    unsigned i = 0;
+    for( Levels::iterator k = _levels.begin(); k != _levels.end(); ++k )
+    {
+        if ( n == i++ )
+            return &(k->second);
+    }
+    return 0L;
 }
 
 const FeatureLevel*

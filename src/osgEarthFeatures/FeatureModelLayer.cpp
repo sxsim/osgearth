@@ -23,7 +23,7 @@ using namespace osgEarth;
 using namespace osgEarth::Features;
 using namespace osgEarth::Symbology;
 
-#define LC "[FeatureModelLayer] "
+#define LC "[FeatureModelLayer] " << getName() << ": "
 
 #define OE_TEST OE_NULL
 
