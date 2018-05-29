@@ -54,6 +54,8 @@ FeatureLevel::fromConfig( const Config& conf )
     conf.getIfSet( "tile_size", _tileSize );
     conf.getIfSet( "style",     _styleName ); 
     conf.getIfSet( "class",     _styleName ); // alias
+    conf.getObjIfSet( "style_expr", _styleExpression );
+    conf.getObjIfSet( "function", _styleExpression );
 }
 
 Config
@@ -64,6 +66,7 @@ FeatureLevel::getConfig() const
     conf.addIfSet( "max_range", _maxRange );
     conf.addIfSet( "tile_size", _tileSize );
     conf.addIfSet( "style",     _styleName );
+    conf.addObjIfSet( "function", _styleExpression ); // alias
     return conf;
 }
 

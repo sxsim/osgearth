@@ -1071,6 +1071,14 @@ FeatureModelGraph::buildTile(const FeatureLevel& level,
             }
         }
 
+        else if (level.styleExpression().isSet())
+        {
+            // For an expression, create a temporary selector to house it:
+            StyleSelector selector;
+            selector.styleExpression() = level.styleExpression().get();
+            buildStyleGroups(&selector, query, index, group.get(), readOptions);
+        }
+
         else
         {
             Style defaultStyle;
@@ -1321,7 +1329,6 @@ FeatureModelGraph::buildStyleGroups(const StyleSelector*  selector,
         // combine the selection style with the incoming base style:
         const Style* selectedStyle = _session->styles()->getStyle(selector->getSelectedStyleName());
         Style style;
-        if ( selectedStyle )
             style = *selectedStyle;
 
         // .. and merge it's query into the existing query

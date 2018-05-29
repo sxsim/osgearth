@@ -47,6 +47,7 @@ StyleSelector::mergeConfig( const Config& conf )
     conf.getIfSet   ( "class",        _styleName ); // alias
     conf.getObjIfSet( "style_expr",   _styleExpression ); 
     conf.getObjIfSet( "class_expr",   _styleExpression ); // alias
+    conf.getObjIfSet( "function",     _styleExpression ); // alias
     conf.getObjIfSet( "query",        _query );
 }
 
@@ -56,7 +57,7 @@ StyleSelector::getConfig() const
     Config conf( "selector" );
     conf.add        ( "name",         _name );
     conf.addIfSet   ( "style",        _styleName );
-    conf.addObjIfSet( "style_expr",   _styleExpression );
+    conf.addObjIfSet( "function",     _styleExpression );
     conf.addObjIfSet( "query",        _query );
     return conf;
 }
