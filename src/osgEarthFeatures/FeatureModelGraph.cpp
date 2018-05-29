@@ -388,15 +388,26 @@ FeatureModelGraph::configureDynamicLayout()
         {
             // use the level's tile size if available:
             if (level->tileSize().isSet())
+            {
                 tileSize = level->tileSize().get();
+            }
 
             // fall back on the layout's tile size:
             else if (layout->tileSize().isSet())
+            {
                 tileSize = layout->tileSize().get();
+            }
+
+            else if (level->maxRange().isSet())
+            {
+                tileSize = level->maxRange().get() / layout->visibilityRangeToTileSizeRatio().get();
+            }
 
             // fall back on the size of the dataset (which will result in LOD 0)
             else
+            {
                 tileSize = 2.0*dataRadius/1.4142;
+            }
 
             // must be at least 1.
             tileSize = osg::maximum(tileSize, 1.0);
@@ -412,7 +423,7 @@ FeatureModelGraph::configureDynamicLayout()
             _lodmap.resize(lod + 1);
             _lodmap[lod].push_back(*level);
 
-            //OE_INFO << LC << "  LOD " << lod << " style " << level->styleName().get() << " range " << level->maxRange().get() << std::endl;
+            OE_INFO << LC << "  LOD " << lod << " style " << level->styleName().get() << " tilesize " << tileSize << " range " << level->maxRange().get() << std::endl;
         }
     }
 }
