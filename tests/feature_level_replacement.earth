@@ -1,0 +1,69 @@
+<!--
+osgEarth Sample.
+
+This sample demonstrates how to create multiple feature levels in which
+each one replaces the one above as you zoom in.
+
+Define your levels, and then set a common "tile_size" in the layout. 
+Then all layout levels will appear at the same LOD with different max ranges.
+-->
+
+<map name="Feature replacement">
+
+    <xi:include href="readymap_imagery.xml"/>
+
+    <feature_model name="Streets" feature_source="streets-data">        
+        <layout>
+            <crop_features>true</crop_features>
+            <tile_size>1000</tile_size>
+            <level style="high" max_range="60000" min_range="30000"/>
+            <level style="mid"  max_range="30000"  min_range="7500"/>
+            <level style="low"  max_range="7500"/>
+        </layout>        
+        <styles>
+            <style type="text/css">
+                high {
+                    stroke: #ff0000;
+                    stroke-width: 3px;
+                    render-depth-offset: true;
+                }
+                mid {
+                    stroke: #00ff00;
+                    stroke-width: 3px;
+                    stroke-stipple-pattern: 0xfefe;
+                    render-depth-offset: true;
+                }
+                low {
+                    stroke: #ffff00;
+                    stroke-width: 10m;
+                    stroke-min-pixels: 2px;
+                    stroke-tessellation-size: 25m;
+                    render-depth-offset: true;
+                }                    
+            </style>
+        </styles>        
+    </feature_model>
+
+    <viewpoints time="2.0">
+        <viewpoint>
+            <heading>-3.30776e-006</heading>
+            <pitch>-88.9999</pitch>
+            <range>49714m</range>
+            <long>-71.07289131028436</long>
+            <lat>42.35131436455718</lat>
+            <height>-0.008207768201828003</height>
+            <srs>+proj=longlat +datum=WGS84 +no_defs </srs>
+        </viewpoint>
+    </viewpoints>
+    
+    <annotations name="Labels">
+        <label text="Boston">
+            <position lat="42.36" long="-71.1"/>
+        </label>
+    </annotations>
+
+    <feature_source name="streets-data" driver="ogr">
+        <url>../data/boston-scl-utm19n-meters.shp</url>
+    </feature_source>
+
+</map>
