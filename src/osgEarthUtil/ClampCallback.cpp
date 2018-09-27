@@ -101,7 +101,7 @@ bool ClampCallback::clampGeometry(osg::Geometry* geom, const osg::Matrixd& local
         }
     }
     geom->dirtyBound();
-    geom->dirtyDisplayList();
+    geom->dirtyGLObjects();
 
     return true;
 }

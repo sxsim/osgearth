@@ -172,7 +172,7 @@ GeometryClamper::apply(osg::Drawable& drawable)
         }
         else
         {
-            geom->dirtyDisplayList();
+            geom->dirtyGLObjects();
         }
 
         OE_DEBUG << LC << "clamped " << count << " verts." << std::endl;
