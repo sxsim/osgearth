@@ -1107,7 +1107,18 @@ RexTerrainEngineNode::onMapModelChanged( const MapModelChange& change )
             {
             case MapModelChange::ADD_LAYER:
             case MapModelChange::ENABLE_LAYER:
-                addLayer(change.getLayer());
+                if (change.getImageLayer())
+                    addLayer(change.getImageLayer());
+                else if (change.getElevationLayer())
+                    addElevationLayer(change.getElevationLayer());
+                else if (change.getMaskLayer())
+                    refresh();
+                else if (change.getModelLayer())
+                {
+                    osgEarth::Config conf = change.getModelLayer()->getConfig();
+                    if(conf.value("mask_enabled") == "true" && conf.value("paged") != "true")
+                        refresh();
+                }
                 break;
 
             case MapModelChange::REMOVE_LAYER:
@@ -1116,6 +1127,14 @@ RexTerrainEngineNode::onMapModelChanged( const MapModelChange& change )
                     removeImageLayer( change.getImageLayer() );
                 else if (change.getElevationLayer())
                     removeElevationLayer(change.getElevationLayer());
+                else if (change.getMaskLayer())
+                    refresh();
+                else if (change.getModelLayer())
+                {
+                    osgEarth::Config conf = change.getModelLayer()->getConfig();
+                    if(conf.value("mask_enabled") == "true" && conf.value("paged") != "true")
+                        refresh();
+                }
                 break;
 
             case MapModelChange::MOVE_LAYER:

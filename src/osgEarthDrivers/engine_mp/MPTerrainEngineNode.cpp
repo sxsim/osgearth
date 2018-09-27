@@ -815,6 +815,14 @@ MPTerrainEngineNode::onMapModelChanged( const MapModelChange& change )
                     addImageLayer(change.getImageLayer());
                 else if (change.getElevationLayer())
                     addElevationLayer(change.getElevationLayer());
+                else if (change.getMaskLayer())
+                    refresh();
+                else if (change.getModelLayer())
+                {
+                    osgEarth::Config conf = change.getModelLayer()->getConfig();
+                    if(conf.value("mask_enabled") == "true" && conf.value("paged") != "true")
+                        refresh();
+                }
                 break;
 
             case MapModelChange::REMOVE_LAYER:
@@ -823,6 +831,14 @@ MPTerrainEngineNode::onMapModelChanged( const MapModelChange& change )
                     removeImageLayer(change.getImageLayer());
                 else if (change.getElevationLayer())
                     removeElevationLayer(change.getElevationLayer());
+                else if (change.getMaskLayer())
+                    refresh();
+                else if (change.getModelLayer())
+                {
+                    osgEarth::Config conf = change.getModelLayer()->getConfig();
+                    if(conf.value("mask_enabled") == "true" && conf.value("paged") != "true")
+                        refresh();
+                }
                 break;
 
             case MapModelChange::MOVE_LAYER:
